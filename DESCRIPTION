@@ -1,0 +1,36 @@
+Package: MatrixProd
+Type: Package
+Title: High-Performance Matrix Multiplication
+Version: 0.1.0
+Date: 2025-07-06
+Authors@R: c(
+    person("St-Digital-Twin", role = c("cph", "fnd")),
+    person("Sergey", "Gumerov", email = "sergey.gumerov@example.com", role = c("aut", "cre"))
+  )
+Description: High-performance matrix multiplication functions for R, based on extensive
+    benchmarking across different implementations. The package includes specialized 
+    functions for different matrix sizes, GPU-accelerated functions using OpenCL,
+    and CPU-optimized implementations using external libraries. Performance can 
+    reach up to 397 GFLOPS on supported hardware.
+License: MIT + file LICENSE
+URL: https://github.com/St-Digital-Twin/265.MatrixProd
+BugReports: https://github.com/St-Digital-Twin/265.MatrixProd/issues
+Depends: 
+    R (>= 3.5.0)
+Imports: 
+    Rcpp (>= 1.0.6),
+    gpuR (>= 2.0.0)
+LinkingTo: 
+    Rcpp,
+    RcppEigen,
+    RcppArmadillo
+Suggests: 
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0),
+    bench,
+    ggplot2
+VignetteBuilder: knitr
+RoxygenNote: 7.2.3
+Encoding: UTF-8
+SystemRequirements: C++17, OpenCL (for GPU acceleration), Apple Accelerate Framework (for Mac)

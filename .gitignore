@@ -1,0 +1,39 @@
+# R specific
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+*.Rproj
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# Compiled files
+*.o
+*.so
+*.dylib
+*.dll
+*.exe
+
+# Package build files
+*.tar.gz
+
+# Documentation
+doc/
+Meta/
+
+# Unit test / coverage reports
+tests/testthat/test-all.R
+
+# vignette outputs
+inst/doc
+vignettes/*.html
+vignettes/*.pdf
+
+# Temporary files
+*.log
+*.tmp
