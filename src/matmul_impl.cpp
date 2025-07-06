@@ -1,18 +1,24 @@
+// [[Rcpp::depends(RcppEigen)]]
+// [[Rcpp::plugins(cpp17)]]
+
+// Сначала включаем Rcpp и RcppEigen
 #include <Rcpp.h>
 #include <RcppEigen.h>
-#include <RcppArmadillo.h>
+
+// Добавляем стандартные заголовочные файлы
 #include <vector>
 #include <string>
 #include <cmath>
 #include <thread>
 
-// [[Rcpp::depends(RcppEigen)]]
-// [[Rcpp::plugins(cpp17)]]
+// Используем только Eigen для матричных операций, избегаем RcppArmadillo из-за конфликта с Accelerate
 
-// Предотвращение конфликта определения COMPLEX между R и Accelerate
+// На macOS используем Accelerate framework
 #ifdef __APPLE__
+// Предотвращение конфликта определения COMPLEX между R и Accelerate
 #define COMPLEX COMPLEX_CPP
-#include <Accelerate/Accelerate.h>
+// Используем только необходимые части Accelerate
+#include <Accelerate/cblas.h>
 #undef COMPLEX
 #endif
 
