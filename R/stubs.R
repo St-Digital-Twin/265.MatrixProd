@@ -1,7 +1,7 @@
 # Импорт внутренних функций не требуется, так как они находятся в том же пакете
 
 # Явно объявляем используемые функции для линтера
-#' @importFrom MatrixProd cpp_mmAccelerate
+#' @importFrom .GlobalEnv cpp_mmAccelerate
 
 #' Check if Metal is available on the system
 #'

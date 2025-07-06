@@ -28,7 +28,6 @@
  * Optimized for Apple M1 Pro hardware - achieves up to 26 GFLOPS on 100x100 matrices
  * Best for matrices smaller than 500x500
  */
-// [[Rcpp::export(name="_MatrixProd_rust_mmTiny_cpp")]]
 SEXP rust_mmTiny_cpp(SEXP A_r, SEXP B_r) {
   Rcpp::NumericMatrix A(A_r);
   Rcpp::NumericMatrix B(B_r);
@@ -86,7 +85,6 @@ SEXP rust_mmTiny_cpp(SEXP A_r, SEXP B_r) {
  * Optimized for Apple M1 Pro hardware - achieves up to 143 GFLOPS on 500x500 matrices
  * Best for matrices between 500x500 and 1000x1000 without GPU
  */
-// [[Rcpp::export(name="_MatrixProd_cpp_mmAccelerate")]]
 SEXP cpp_mmAccelerate(SEXP A_r, SEXP B_r) {
   Rcpp::NumericMatrix A(A_r);
   Rcpp::NumericMatrix B(B_r);
@@ -169,7 +167,7 @@ SEXP cpp_mmAccelerate(SEXP A_r, SEXP B_r) {
  * [7] - Estimated GFLOPS for large matrices with GPU
  */
 // [[Rcpp::export]]
-Rcpp::NumericVector get_performance_info() {
+SEXP get_performance_info() {
   Rcpp::NumericVector result(8);
   
 #ifdef __APPLE__
@@ -234,29 +232,4 @@ Rcpp::NumericVector get_performance_info() {
   return result;
 }
 
-/**
- * R wrapper functions to provide consistent interfaces
- * These wrappers help maintain backward compatibility and consistent naming
- */
-
-// Register routines with R
-// [[Rcpp::export]]
-SEXP rust_mmTiny_wrapper(SEXP a, SEXP b) {
-  return rust_mmTiny_cpp(a, b);
-}
-
-// [[Rcpp::export]]
-SEXP cpp_mmAccelerate_wrapper(SEXP a, SEXP b) {
-  return cpp_mmAccelerate(a, b);
-}
-
-// Backward compatibility wrappers
-// [[Rcpp::export]]
-SEXP tiny_matmul_wrapper(SEXP a, SEXP b) {
-  return rust_mmTiny_cpp(a, b);
-}
-
-// [[Rcpp::export]]
-SEXP cpu_fast_matmul_wrapper(SEXP a, SEXP b) {
-  return cpp_mmAccelerate(a, b);
-}
+// Конец файла
