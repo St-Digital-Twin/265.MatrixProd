@@ -1,12 +1,19 @@
 #include <Rcpp.h>
 #include <RcppEigen.h>
+#include <RcppArmadillo.h>
+#include <vector>
+#include <string>
+#include <cmath>
+#include <thread>
 
 // [[Rcpp::depends(RcppEigen)]]
 // [[Rcpp::plugins(cpp17)]]
 
-// Configuration for Mac's Accelerate framework
+// Предотвращение конфликта определения COMPLEX между R и Accelerate
 #ifdef __APPLE__
+#define COMPLEX COMPLEX_CPP
 #include <Accelerate/Accelerate.h>
+#undef COMPLEX
 #endif
 
 /**
