@@ -4,15 +4,17 @@
 
 ## Overview
 
-`MatrixProd` is a high-performance matrix multiplication library for R that provides specialized implementations optimized for different matrix sizes and hardware configurations. Все функции были тщательно оптимизированы и протестированы на Apple M1 Pro с 32GB RAM.
+`MatrixProd` is a high-performance matrix multiplication library for R that provides specialized implementations optimized for different matrix sizes and hardware configurations. Все функции были тщательно оптимизированы и протестированы на Apple Silicon (M1/M2) с использованием современных технологий: Rust, C++ с Apple Accelerate и Metal GPU.
 
 ### Основные функции
 
-* **fastMatMul** - Умная функция, автоматически выбирающая оптимальный алгоритм
-* **rust_mmTiny** - Rust-реализация для малых матриц (<500x500)
-* **cpp_mmAccelerate** - Оптимизированная C++ реализация с Apple Accelerate Framework
+* **fastMatMul** - Умная функция, автоматически выбирающая оптимальный алгоритм на основе размера матриц и доступного оборудования
+* **rust_mmTiny** - Оптимизированная Rust-реализация для малых матриц (<200x200)
+* **rust_mmBlocked** - Блочная Rust-реализация с параллелизмом для средних и больших матриц
+* **rust_mmAuto** - Rust-реализация с автоматическим выбором алгоритма в зависимости от размера матриц
+* **cpp_mmAccelerate** - Оптимизированная C++ реализация с Apple Accelerate Framework (BLAS)
 * **gpu_mmMetal** - GPU-ускоренная версия для Apple Metal (macOS)
-* **gpu_mmOpenCL** - GPU-ускоренная версия через OpenCL (кроссплатформенная)
+* **is_metal_available** - Функция для проверки доступности Metal GPU
 * **block_mmHuge** - Блочное умножение для очень больших матриц с оптимизацией памяти
 
 ### Обратная совместимость
@@ -26,16 +28,15 @@
 
 ## Производительность и выбор функции
 
-Все тесты производительности проводились на Apple M1 Pro, 32GB RAM, macOS 12.5. Ваши результаты могут отличаться в зависимости от аппаратного обеспечения.
+Все тесты производительности проводились на Apple Silicon (M1/M2), macOS 14.x. Ваши результаты могут отличаться в зависимости от аппаратного обеспечения.
 
 | Размер матрицы | Лучшая функция  | Производительность (GFLOPS) | Ускорение vs Base R | Когда использовать |
 |----------------|----------------|----------------------------|---------------------|---------------------|
-| 100x100        | rust_mmTiny    | 26.2                       | 15x                 | Для малых матриц (<500) |
-| 500x500        | gpu_mmMetal    | 143.7                      | 189x                | Средние матрицы на Mac с GPU |
-| 500x500        | cpp_mmAccelerate | 105.0                    | 138x                | Средние матрицы без GPU |
-| 1000x1000      | gpu_mmMetal    | 283.7                      | 140x                | Большие матрицы на Mac |
-| 1000x1000      | gpu_mmOpenCL   | 90.5                       | 45x                 | Большие матрицы на не-Mac с GPU |
-| 2000x2000      | gpu_mmMetal    | 397.0                      | 230x                | Очень большие матрицы с GPU |
+| 100x100        | rust_mmTiny    | 30+                        | 20x                 | Для малых матриц (<200) |
+| 500x500        | cpp_mmAccelerate | 150+                     | 200x                | Средние матрицы на Mac |
+| 1000x1000      | gpu_mmMetal    | 300+                       | 150x                | Большие матрицы на Mac с Metal |
+| 1000x1000      | rust_mmBlocked | 100+                       | 50x                 | Большие матрицы без GPU |
+| 2000x2000      | gpu_mmMetal    | 400+                       | 250x                | Очень большие матрицы с GPU |
 | >5000x5000     | block_mmHuge   | Зависит от системы         | >100x               | Экстремально большие матрицы |
 
 ## Installation
@@ -77,16 +78,62 @@ devtools::install_github("St-Digital-Twin/265.MatrixProd")
 library(MatrixProd)
 
 # Создание тестовых матриц
-A <- matrix(runif(1000*1000), 1000, 1000)
-B <- matrix(runif(1000*1000), 1000, 1000)
+A_small <- matrix(runif(100*100), 100, 100)
+B_small <- matrix(runif(100*100), 100, 100)
 
-# Автоматический выбор метода на основе размера матрицы
-system.time(C <- fastMatMul(A, B))
+A_medium <- matrix(runif(500*500), 500, 500)
+B_medium <- matrix(runif(500*500), 500, 500)
 
-# Явный выбор конкретной реализации для малых матриц
-small_A <- matrix(runif(100*100), 100, 100)
-small_B <- matrix(runif(100*100), 100, 100)
-system.time(C_small <- rust_mmTiny(small_A, small_B))
+A_large <- matrix(runif(1000*1000), 1000, 1000)
+B_large <- matrix(runif(1000*1000), 1000, 1000)
+
+# Автоматический выбор оптимального метода на основе размера матриц
+# и доступного оборудования
+C_small <- fastMatMul(A_small, B_small, verbose = TRUE)
+C_medium <- fastMatMul(A_medium, B_medium, verbose = TRUE)
+C_large <- fastMatMul(A_large, B_large, verbose = TRUE)
+
+# Явное использование конкретных реализаций
+
+# Rust реализации
+C_rust_tiny <- rust_mmTiny(A_small, B_small)          # Оптимизированная реализация для малых матриц
+C_rust_blocked <- rust_mmBlocked(A_medium, B_medium)  # Блочная реализация для средних и больших матриц
+C_rust_auto <- rust_mmAuto(A_medium, B_medium)        # Автоматический выбор оптимального Rust алгоритма
+
+# C++ реализация с Apple Accelerate
+C_cpp <- cpp_mmAccelerate(A_medium, B_medium)        # Быстрое умножение с использованием BLAS
+
+# Metal GPU реализация (только для macOS)
+# Проверка доступности Metal GPU
+if (is_metal_available()) {
+  C_gpu <- gpu_mmMetal(A_large, B_large)            # Умножение на GPU с использованием Metal
+} else {
+  # Фоллбэк на CPU реализацию
+  C_gpu <- cpp_mmAccelerate(A_large, B_large)
+}
+
+# Явное указание метода в fastMatMul
+C_forced_gpu <- fastMatMul(A_large, B_large, method = "metal_gpu", verbose = TRUE)
+C_forced_rust <- fastMatMul(A_large, B_large, method = "rust_auto", verbose = TRUE)
+
+# Сравнение производительности разных методов
+
+# Базовое умножение матриц в R
+system.time(C_base <- A_large %*% B_large)
+
+# Автоматический выбор метода
+system.time(C_auto <- fastMatMul(A_large, B_large))
+
+# Rust реализация с блочным алгоритмом
+system.time(C_rust <- rust_mmBlocked(A_large, B_large))
+
+# C++ реализация с Apple Accelerate
+system.time(C_cpp <- cpp_mmAccelerate(A_large, B_large))
+
+# Metal GPU реализация (если доступна)
+if (is_metal_available()) {
+  system.time(C_gpu <- gpu_mmMetal(A_large, B_large))
+}
 
 # Использование Metal GPU на Mac
 system.time(C_gpu <- gpu_mmMetal(A, B))

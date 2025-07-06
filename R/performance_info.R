@@ -28,5 +28,5 @@
 #' @export
 get_performance_info <- function() {
   # Call the internal function that accesses the native implementation
-  `_get_performance_info`()
+  .Call("get_performance_info")
 }

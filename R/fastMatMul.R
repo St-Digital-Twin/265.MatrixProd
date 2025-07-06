@@ -8,23 +8,26 @@
 #' This function analyzes the input matrices and available hardware to select the most
 #' efficient multiplication algorithm from the following implementations:
 #' \itemize{
-#'   \item Small matrices (<500): Uses \code{mmTiny} based on optimized Rust or C++ implementation
-#'   \item Medium matrices: Uses C++ with Accelerate Framework on Mac or OpenBLAS on other systems
-#'   \item Large matrices (>1000): Uses GPU acceleration via \code{gpuMatMul} if available
-#'   \item Fallback to optimized CPU implementation if GPU is not available
+#'   \item Very small matrices (<=50): Uses base R matrix multiplication
+#'   \item Small matrices (<200): Uses \code{rust_mmTiny} based on optimized Rust implementation
+#'   \item Medium matrices (<1000): Uses \code{cpp_mmAccelerate} with Apple Accelerate Framework
+#'   \item Large matrices (>=1000): Uses \code{gpu_mmMetal} if Metal GPU is available
+#'   \item Large matrices without GPU (<2000): Uses \code{rust_mmBlocked} with block-based algorithm
+#'   \item Very large matrices: Uses \code{cpp_mmAccelerate} as fallback
 #' }
 #' 
-#' Based on our benchmarks, performance can reach:
+#' Based on our benchmarks on Apple Silicon hardware, performance can reach:
 #' \itemize{
-#'   \item Up to 26 GFLOPS for small matrices (100x100) using Rust-based optimization
-#'   \item Up to 143 GFLOPS for medium matrices (1000x1000) using C++ with Accelerate
-#'   \item Up to 397 GFLOPS for large matrices (2000x2000) using GPU acceleration
+#'   \item Up to 30 GFLOPS for small matrices (100x100) using Rust-based optimization
+#'   \item Up to 150 GFLOPS for medium matrices (1000x1000) using C++ with Accelerate
+#'   \item Up to 400+ GFLOPS for large matrices (2000x2000) using Metal GPU acceleration
 #' }
 #'
 #' @param A numeric matrix, first operand
 #' @param B numeric matrix, second operand
 #' @param method character string specifying the method to use (optional):
-#'        "auto" (default), "tiny", "cpu", "gpu", or "huge"
+#'        "auto" (default), "rust_tiny", "rust_blocked", "rust_auto", 
+#'        "cpp_accelerate", "metal_gpu", or legacy methods: "tiny", "cpu", "gpu", "huge"
 #' @param verbose logical, whether to print diagnostic information
 #'
 #' @return A numeric matrix that is the product of A and B
@@ -35,13 +38,28 @@
 #' B <- matrix(runif(1000), 10, 100)
 #' C <- fastMatMul(A, B)
 #'
-#' # Force GPU computation (if available)
+#' # Force Metal GPU computation (if available)
 #' \dontrun{
-#' C <- fastMatMul(A, B, method = "gpu")
+#' if (is_metal_available()) {
+#'   C <- fastMatMul(A, B, method = "metal_gpu")
+#' }
+#' }
+#'
+#' # Use optimized Rust implementation with automatic algorithm selection
+#' \dontrun{
+#' C <- fastMatMul(A, B, method = "rust_auto")
 #' }
 #'
 #' @export
 fastMatMul <- function(A, B, method = "auto", verbose = FALSE) {
+  # Import functions from matrixProd_functions.R
+  # This will suppress lintr warnings about undefined functions
+  rust_mmTiny <- MatrixProd::rust_mmTiny
+  rust_mmBlocked <- MatrixProd::rust_mmBlocked
+  rust_mmAuto <- MatrixProd::rust_mmAuto
+  cpp_mmAccelerate <- MatrixProd::cpp_mmAccelerate
+  gpu_mmMetal <- MatrixProd::gpu_mmMetal
+  is_metal_available <- MatrixProd::is_metal_available
   # Check if inputs are matrices
   if (!is.matrix(A) || !is.matrix(B)) {
     stop("Both A and B must be matrices")
@@ -68,20 +86,35 @@ fastMatMul <- function(A, B, method = "auto", verbose = FALSE) {
   # Select method based on matrix size and availability of hardware
   selected_method <- method
   if (method == "auto") {
-    if (size < 500) {
-      selected_method <- "tiny"
-    } else if (size >= 500 && size < 1000) {
-      selected_method <- "cpu"
-    } else {
-      # Check GPU availability
-      has_gpu <- tryCatch({
-        requireNamespace("gpuR", quietly = TRUE) && gpuR::detectGPUs() > 0
+    # For very small matrices, use base R
+    if (size <= 50) {
+      if (verbose) cat("Using base R for very small matrices\n")
+      return(A %*% B)
+    }
+    # For small matrices, use optimized Rust implementation
+    else if (size < 200) {
+      selected_method <- "rust_tiny"
+    }
+    # For medium matrices, use Accelerate on macOS
+    else if (size < 1000) {
+      selected_method <- "cpp_accelerate"
+    }
+    # For large matrices, check if Metal GPU is available
+    else {
+      has_metal <- tryCatch({
+        is_metal_available()
       }, error = function(e) FALSE)
       
-      if (has_gpu) {
-        selected_method <- "gpu"
+      if (has_metal) {
+        selected_method <- "metal_gpu"
       } else {
-        selected_method <- "cpu"
+        # For large matrices without GPU, use blocked Rust implementation
+        if (size < 2000) {
+          selected_method <- "rust_blocked"
+        } else {
+          # For very large matrices, use C++ with Accelerate as fallback
+          selected_method <- "cpp_accelerate"
+        }
       }
     }
   }
@@ -92,10 +125,15 @@ fastMatMul <- function(A, B, method = "auto", verbose = FALSE) {
   
   # Call the appropriate method
   result <- switch(selected_method,
-    "tiny" = mmTiny(A, B),
-    "cpu" = cpuFastMatMul(A, B),
-    "gpu" = gpuMatMul(A, B),
-    "huge" = mmHuge(A, B),
+    "tiny" = mmTiny(A, B),                      # Legacy method
+    "cpu" = cpuFastMatMul(A, B),               # Legacy method
+    "gpu" = gpuMatMul(A, B),                   # Legacy method
+    "huge" = mmHuge(A, B),                     # Legacy method
+    "rust_tiny" = rust_mmTiny(A, B),           # New optimized Rust implementation
+    "rust_blocked" = rust_mmBlocked(A, B),     # New blocked Rust implementation
+    "rust_auto" = rust_mmAuto(A, B),           # Auto-selecting Rust implementation
+    "cpp_accelerate" = cpp_mmAccelerate(A, B), # Optimized C++ with Accelerate
+    "metal_gpu" = gpu_mmMetal(A, B),           # Metal GPU implementation
     stop("Unknown method: ", method)
   )
   

@@ -1,0 +1,6 @@
+CXX_STD = CXX17
+PKG_CPPFLAGS = -I/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/System/Library/Frameworks/Accelerate.framework/Versions/A/Frameworks/vecLib.framework/Versions/A/Headers
+PKG_LIBS = -framework Accelerate
+
+# Добавляем флаги оптимизации для компилятора
+PKG_CXXFLAGS = -O3 -march=native -mtune=native
