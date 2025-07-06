@@ -18,7 +18,7 @@
 // Предотвращение конфликта определения COMPLEX между R и Accelerate
 #define COMPLEX COMPLEX_CPP
 // Используем только необходимые части Accelerate
-#include <Accelerate/cblas.h>
+#include <Accelerate/Accelerate.h>
 #undef COMPLEX
 #endif
 
