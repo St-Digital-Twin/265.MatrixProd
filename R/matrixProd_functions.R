@@ -148,7 +148,7 @@ fastMatMul <- function(A, B, method = "auto", verbose = FALSE) {
 #' @export
 rust_mmTiny <- function(A, B) {
   # This function calls our optimized Rust implementation via C interface
-  .Call("rust_mmTiny_cpp", A, B)
+  `_rust_mmTiny_cpp`(A, B)
 }
 
 #' C++ Accelerate-based Matrix Multiplication
@@ -187,7 +187,7 @@ rust_mmTiny <- function(A, B) {
 cpp_mmAccelerate <- function(A, B) {
   # This function calls our optimized C++ implementation
   # using Apple Accelerate Framework on macOS
-  .Call("cpp_mmAccelerate", A, B)
+  `_cpp_mmAccelerate`(A, B)
 }
 
 #' Metal GPU Accelerated Matrix Multiplication
