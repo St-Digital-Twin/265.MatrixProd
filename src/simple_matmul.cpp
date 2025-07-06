@@ -1,34 +1,40 @@
+// Максимально простая реализация без использования Rcpp и других сложных зависимостей
 #include <R.h>
 #include <Rinternals.h>
-#include <Rcpp.h>
 
 // Простая реализация матричного умножения для проверки работоспособности
 extern "C" SEXP rust_mmTiny_cpp(SEXP A_r, SEXP B_r) {
-  Rcpp::NumericMatrix A(A_r);
-  Rcpp::NumericMatrix B(B_r);
+  // Получаем размеры матриц
+  SEXP dim_A = getAttrib(A_r, R_DimSymbol);
+  SEXP dim_B = getAttrib(B_r, R_DimSymbol);
   
-  int m = A.nrow();
-  int n = B.ncol();
-  int k = A.ncol();
+  int m = INTEGER(dim_A)[0];
+  int k = INTEGER(dim_A)[1];
+  int n = INTEGER(dim_B)[1];
   
-  if (B.nrow() != k) {
-    Rcpp::stop("Несовместимые размеры матриц");
+  if (INTEGER(dim_B)[0] != k) {
+    error("Несовместимые размеры матриц");
   }
   
-  Rcpp::NumericMatrix C(m, n);
+  // Создаем результирующую матрицу
+  SEXP C_r = PROTECT(allocMatrix(REALSXP, m, n));
+  double *A = REAL(A_r);
+  double *B = REAL(B_r);
+  double *C = REAL(C_r);
   
   // Простое матричное умножение
   for (int i = 0; i < m; i++) {
     for (int j = 0; j < n; j++) {
       double sum = 0.0;
       for (int l = 0; l < k; l++) {
-        sum += A(i, l) * B(l, j);
+        sum += A[i + l * m] * B[l + j * k];
       }
-      C(i, j) = sum;
+      C[i + j * m] = sum;
     }
   }
   
-  return C;
+  UNPROTECT(1);
+  return C_r;
 }
 
 // Простая реализация матричного умножения для проверки работоспособности
@@ -39,17 +45,19 @@ extern "C" SEXP cpp_mmAccelerate(SEXP A_r, SEXP B_r) {
 
 // Информация о производительности
 extern "C" SEXP get_performance_info() {
-  Rcpp::NumericVector result(8);
+  SEXP result = PROTECT(allocVector(REALSXP, 8));
+  double *res_ptr = REAL(result);
   
   // Заполняем базовой информацией
-  result[0] = 1.0;  // Есть Accelerate framework (macOS)
-  result[1] = 0.0;  // Нет OpenCL
-  result[2] = 0.0;  // Нет Metal
-  result[3] = std::thread::hardware_concurrency();  // Доступные потоки CPU
-  result[4] = 1.0;  // Базовый уровень поддержки SIMD
-  result[5] = 10.0; // Примерная производительность для малых матриц (GFLOPS)
-  result[6] = 20.0; // Примерная производительность для средних матриц (GFLOPS)
-  result[7] = 0.0;  // Нет GPU для больших матриц
+  res_ptr[0] = 1.0;  // Есть Accelerate framework (macOS)
+  res_ptr[1] = 0.0;  // Нет OpenCL
+  res_ptr[2] = 0.0;  // Нет Metal
+  res_ptr[3] = 8.0;  // Примерное количество потоков CPU
+  res_ptr[4] = 1.0;  // Базовый уровень поддержки SIMD
+  res_ptr[5] = 10.0; // Примерная производительность для малых матриц (GFLOPS)
+  res_ptr[6] = 20.0; // Примерная производительность для средних матриц (GFLOPS)
+  res_ptr[7] = 0.0;  // Нет GPU для больших матриц
   
+  UNPROTECT(1);
   return result;
 }
