@@ -1,15 +1,29 @@
-// [[Rcpp::depends(RcppEigen)]]
-// [[Rcpp::plugins(cpp17)]]
-
-// Сначала включаем Rcpp и RcppEigen
+// Используем стандартный подход к экспорту функций в R
+#include <R.h>
+#include <Rinternals.h>
 #include <Rcpp.h>
 #include <RcppEigen.h>
+#include <thread>
 
-// Добавляем стандартные заголовочные файлы
+// Определяем COMPLEX перед включением Accelerate
+#ifdef __APPLE__
+#define ARMA_DONT_USE_WRAPPER
+#ifdef COMPLEX
+#undef COMPLEX
+#include <Accelerate/Accelerate.h>
+#define COMPLEX std::complex<double>
+#else
+#include <Accelerate/Accelerate.h>
+#endif
+#else
+// Для других платформ можно использовать OpenBLAS или другие библиотеки
+#include <cblas.h>
+#endif
+
+// Сначала включаем Rcpp и RcppEigen
 #include <vector>
 #include <string>
 #include <cmath>
-#include <thread>
 
 // Используем только Eigen для матричных операций, избегаем RcppArmadillo из-за конфликта с Accelerate
 
