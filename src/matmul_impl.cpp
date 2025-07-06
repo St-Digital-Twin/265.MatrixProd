@@ -28,7 +28,7 @@
  * Optimized for Apple M1 Pro hardware - achieves up to 26 GFLOPS on 100x100 matrices
  * Best for matrices smaller than 500x500
  */
-// [[Rcpp::export]]
+// [[Rcpp::export(name="_MatrixProd_rust_mmTiny_cpp")]]
 SEXP rust_mmTiny_cpp(SEXP A_r, SEXP B_r) {
   Rcpp::NumericMatrix A(A_r);
   Rcpp::NumericMatrix B(B_r);
@@ -86,7 +86,7 @@ SEXP rust_mmTiny_cpp(SEXP A_r, SEXP B_r) {
  * Optimized for Apple M1 Pro hardware - achieves up to 143 GFLOPS on 500x500 matrices
  * Best for matrices between 500x500 and 1000x1000 without GPU
  */
-// [[Rcpp::export]]
+// [[Rcpp::export(name="_MatrixProd_cpp_mmAccelerate")]]
 SEXP cpp_mmAccelerate(SEXP A_r, SEXP B_r) {
   Rcpp::NumericMatrix A(A_r);
   Rcpp::NumericMatrix B(B_r);
